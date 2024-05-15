@@ -1,0 +1,15 @@
+{
+  "name": "hnsw-benchmark",
+  "version-string": "0.1.0",
+  "license": "MIT",
+  "description": "benchmark hnsw implementations",
+  "dependencies": [
+    { "name": "hnswlib", "version>=": "0.8.0" },
+    { "name": "benchmark", "version>=": "1.8.3" },
+    { "name": "usearch", "version>=": "2.3.2" },
+    { "name": "faiss", "version>=": "1.7.4" },
+    { "name": "annoy", "version>=": "1.17.3" },
+    { "name": "fp16", "version>=": "2021-02-21" }
+  ],
+  "builtin-baseline": "bd2b54836beed96e1efbe9aaf8ee800f5448856d"
+}
