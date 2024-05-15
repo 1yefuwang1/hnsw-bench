@@ -9,6 +9,8 @@
 #include "hnswlib/hnswlib.h"
 #include "usearch/index.hpp"
 #include "usearch/index_dense.hpp"
+#include "annoy/annoylib.h"
+#include "annoy/kissrandom.h"
 
 static const int kDim = 1000;
 static const int kNumVector = 10000;
@@ -24,7 +26,7 @@ static std::vector<std::vector<float>> GenerateRandomVectors() {
 
   std::random_device rd;
   std::mt19937 gen(rd());
-  std::uniform_real_distribution<> dis(-1.0f, 1.0f);
+  std::uniform_real_distribution<> dis(-100.0f, 100.0f);
 
   for (int i = 0; i < kNumVector; ++i) {
     std::vector<float> vec;
@@ -63,7 +65,6 @@ using namespace unum;
 using namespace unum::usearch;
 
 static void BM_Usearch(benchmark::State &state) {
-
   const auto &data = GenerateRandomVectors();
   metric_punned_t metric(kDim, metric_kind_t::l2sq_k, scalar_kind_t::f32_k);
 
@@ -89,6 +90,25 @@ static void BM_Usearch(benchmark::State &state) {
     }
   }
 }
+
+using namespace Annoy;
+
+static void BM_Annoy(benchmark::State& state) {
+  const auto &data = GenerateRandomVectors();
+  auto index = AnnoyIndex<int, float, Annoy::Angular, Annoy::Kiss32Random, AnnoyIndexSingleThreadedBuildPolicy>(kDim);
+
+  for (int i = 0; i < data.size(); i++) {
+    index.add_item(i, data[i].data());
+  }
+  for (auto _ : state) {
+    for (int i = 0; i < 10; i++) {
+      std::vector<int> result;
+      index.get_nns_by_vector(data[i].data(), kTopK, -1, &result, nullptr);
+    }
+  }
+}
+
 // Register the function as a benchmark
 BENCHMARK(BM_HNSWLib);
 BENCHMARK(BM_Usearch);
+BENCHMARK(BM_Annoy);
