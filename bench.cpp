@@ -65,6 +65,7 @@ using namespace unum;
 using namespace unum::usearch;
 
 static void BM_Usearch(benchmark::State &state) {
+  bool exact = state.range(0);
   const auto &data = GenerateRandomVectors();
   metric_punned_t metric(kDim, metric_kind_t::l2sq_k, scalar_kind_t::f32_k);
 
@@ -86,7 +87,7 @@ static void BM_Usearch(benchmark::State &state) {
   std::cout << "usearch construction done." << std::endl;
   for (auto _ : state) {
     for (int i = 0; i < 10; i++) {
-      auto results = index.search(data[i].data(), kTopK);
+      auto results = index.search(data[i].data(), kTopK, exact);
     }
   }
 }
@@ -110,5 +111,5 @@ static void BM_Annoy(benchmark::State& state) {
 
 // Register the function as a benchmark
 BENCHMARK(BM_HNSWLib);
-BENCHMARK(BM_Usearch);
+BENCHMARK(BM_Usearch)->Arg(0)->Arg(1);
 BENCHMARK(BM_Annoy);
