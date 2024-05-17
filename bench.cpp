@@ -11,14 +11,16 @@
 #include "usearch/index_dense.hpp"
 #include "annoy/annoylib.h"
 #include "annoy/kissrandom.h"
+#include "faiss/IndexHNSW.h"
 
 static const int kDim = 1000;
 static const int kNumVector = 10000;
+// static const int kNumVector = 100;
 static const int kTopK = 10;
 
 static std::vector<std::vector<float>> GenerateRandomVectors() {
   static std::vector<std::vector<float>> data;
-  if (!data.empty()) {
+  if (data.size() == kNumVector) {
     return data;
   }
 
@@ -101,6 +103,7 @@ static void BM_Annoy(benchmark::State& state) {
   for (int i = 0; i < data.size(); i++) {
     index.add_item(i, data[i].data());
   }
+  std::cout << "annoy construction done." << std::endl;
   for (auto _ : state) {
     for (int i = 0; i < 10; i++) {
       std::vector<int> result;
@@ -109,7 +112,31 @@ static void BM_Annoy(benchmark::State& state) {
   }
 }
 
+static void BM_Faiss(benchmark::State& state) {
+  const auto &data = GenerateRandomVectors();
+
+  auto index = faiss::IndexHNSWFlat(kDim, 16, faiss::METRIC_L2);
+  index.hnsw.efConstruction = 200;
+  index.hnsw.efSearch = 10;
+  for (int i = 0; i < data.size(); i++) {
+    index.add(i, data[i].data());
+  }
+  std::cout << "faiss construction done." << std::endl;
+
+  for (auto _ : state) {
+    for (int i = 0; i < 10; i++) {
+      std::vector<long> result;
+      result.reserve(kTopK);
+      std::vector<float> distance;
+      distance.reserve(kTopK);
+      index.search(1, data[i].data(), kTopK, distance.data(), result.data(), nullptr);
+    }
+  }
+}
+
 // Register the function as a benchmark
 BENCHMARK(BM_HNSWLib);
 BENCHMARK(BM_Usearch)->Arg(0)->Arg(1);
 BENCHMARK(BM_Annoy);
+// faiss is so slow that I wait for 20min and it's still not finished.
+// BENCHMARK(BM_Faiss);
